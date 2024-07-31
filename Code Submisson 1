@@ -1,65 +1,128 @@
-from tkinter import * 
-root = Tk() 
-root.title("Simple Calculator")
+from tkinter import *
+from tkinter import ttk, messagebox
+import random
 
-e = Entry(root, width=35, borderwidth=5)
-e.grid(row=0, column=0, columnspan=3, padx=10, pady=10)
+# Hire Details 
+class HireRecord:
+    def __init__(self, customer_name, item_hired, num_items):
+        self.customer_name = customer_name
+        self.item_hired = item_hired
+        self.num_items = num_items
+        self.receipt_number = random.randint(100000, 999999)
 
-def button_click(number): 
-   #e.delete(0,END) 
-  current= e.get()
-  e.insert(0, str(current) + str(number))
+# Class to manage hire records
+class PartyHireStore:
+    def __init__(self):
+        self.hire_records = []
 
-print_icon = PhotoImage (file="sunset.jpeg")
+    def add_record(self, record):
+        self.hire_records.append(record)
 
-Button(main_window, text="Print Entries", image=print_icon, compound=LEFT, command=print_entries).pack
-Button(main_window,text="Quit", command=end_program).pack
-       
-button_1 = Button(root, text="1", padx=40, pady=20, command=lambda: button_click(1))
+    def remove_record(self, receipt_number):
+        self.hire_records = [record for record in self.hire_records if record.receipt_number != receipt_number]
 
-button_2 = Button(root, text="2", padx=40, pady=20, command=lambda: button_click(2))
+    def get_record(self, receipt_number):
+        for record in self.hire_records:
+            if record.receipt_number == receipt_number:
+                return record
+        return None
 
-button_3 = Button(root, text="3", padx=40, pady=20, command=lambda: button_click(3))
+    def get_records(self):
+        return self.hire_records
 
-button_4 = Button(root, text="4", padx=40, pady=20, command=lambda: button_click(4))
+# Application class for the GUI
+class Application:
+    def __init__(self, root):
+        self.store = PartyHireStore()
+        self.root = root
+        self.root.title("Julie's Party Hire")
 
-button_5 = Button(root, text="5", padx=40, pady=20, command=lambda: button_click(5))
+        # Create input fields and buttons
+        self.setup_widgets()
 
-button_6 = Button(root, text="6", padx=40, pady=20, command=lambda: button_click(6))
+    def setup_widgets(self):
+        Label(self.root, text="Customer Name").grid(column=0, row=0, sticky=E)
+        Label(self.root, text="Item Hired").grid(column=0, row=1, sticky=E)
+        Label(self.root, text="Number of Items").grid(column=0, row=2, sticky=E)
 
-button_7 = Button(root, text="7", padx=40, pady=20, command=lambda: button_click(7))
+        self.entry_customer_name = Entry(self.root)
+        self.entry_customer_name.grid(column=1, row=0)
 
-button_8 = Button(root, text="8", padx=40, pady=20, command=lambda: button_click(8))
+        self.entry_item_hired = Entry(self.root)
+        self.entry_item_hired.grid(column=1, row=1)
 
-button_9 = Button(root, text="9", padx=40, pady=20, command=lambda: button_click(9))
+        self.num_items = IntVar()
+        self.combo_num_items = ttk.Combobox(self.root, textvariable=self.num_items, values=list(range(1, 501)))
+        self.combo_num_items.grid(column=1, row=2)
 
-button_0 = Button(root, text="0", padx=40, pady=20, command=lambda: button_click(0))
+        Button(self.root, text="Add Record", command=self.add_record).grid(column=2, row=0)
+        Button(self.root, text="Show Records", command=self.show_records).grid(column=2, row=1)
+        Button(self.root, text="Delete Record", command=self.delete_record).grid(column=2, row=2)
+        Button(self.root, text="Receipt", command=self.show_receipt).grid(column=2, row=3)
+        Button(self.root, text="Quit", command=self.root.quit).grid(column=2, row=4)
 
-button_add = Button(root, text="+", padx=39, pady=20, command=lambda: button_click())
+        Label(self.root, text="Delete by Receipt Number").grid(column=0, row=3, sticky=E)
+        self.entry_delete_receipt = Entry(self.root)
+        self.entry_delete_receipt.grid(column=1, row=3)
 
-button_equal = Button(root, text="=", padx=91, pady=20, command=lambda: button_click()) 
+        Label(self.root, text="Receipt Number").grid(column=0, row=4, sticky=E)
+        self.entry_receipt = Entry(self.root)
+        self.entry_receipt.grid(column=1, row=4)
 
-button_clear = Button(root, text="Clear", padx=79, pady=20, command=lambda: button_click())
+    def add_record(self):
+        customer_name = self.entry_customer_name.get().strip()
+        item_hired = self.entry_item_hired.get().strip()
+        num_items = self.num_items.get()
 
-#Put the buttons on the screen
+        if not customer_name or not item_hired or num_items < 1:
+            messagebox.showerror("Error", "All fields must be filled and valid!")
+            return
 
-button_1.grid(row=3, column=0) 
-button_2.grid(row=3, column=1) 
-button_3.grid(row=3, column=2) 
+        record = HireRecord(customer_name, item_hired, num_items)
+        self.store.add_record(record)
+        messagebox.showinfo("Success", f"Record added with receipt number: {record.receipt_number}")
 
-button_4.grid(row=2, column=0) 
-button_5.grid(row=2, column=1) 
-button_6.grid(row=2, column=2) 
+        self.entry_customer_name.delete(0, END)
+        self.entry_item_hired.delete(0, END)
+        self.combo_num_items.set('')
 
-button_7.grid(row=1, column=0) 
-button_8.grid(row=1, column=1) 
-button_9.grid(row=1, column=2) 
+    def show_records(self):
+        records = self.store.get_records()
+        record_text = "Current Records:\n"
+        for record in records:
+            record_text += f"Receipt: {record.receipt_number}, Customer: {record.customer_name}, Item: {record.item_hired}, Quantity: {record.num_items}\n"
+        messagebox.showinfo("Records", record_text)
 
-button_0.grid(row=4, column=0) 
-button_add.grid(row=5, column=0)
-button_equal.grid(row=5, column=1, columnspan=2)
-button_clear.grid(row=4, column=1, columnspan=2) 
+    def delete_record(self):
+        try:
+            receipt_number = int(self.entry_delete_receipt.get())
+            self.store.remove_record(receipt_number)
+            messagebox.showinfo("Success", f"Record with receipt number {receipt_number} deleted.")
+            self.entry_delete_receipt.delete(0, END)
+        except ValueError:
+            messagebox.showerror("Error", "Invalid receipt number!")
 
+    def show_receipt(self):
+        try:
+            receipt_number = int(self.entry_receipt.get())
+            record = self.store.get_record(receipt_number)
+            if record:
+                receipt_text = (f"Receipt Number: {record.receipt_number}\n"
+                                f"Customer Name: {record.customer_name}\n"
+                                f"Item Hired: {record.item_hired}\n"
+                                f"Number of Items: {record.num_items}")
+                messagebox.showinfo("Receipt", receipt_text)
+            else:
+                messagebox.showerror("Error", "Receipt not found!")
+        except ValueError:
+            messagebox.showerror("Error", "Invalid receipt number!")
 
-root.mainloop()
+# Main function to run the program
+def main():
+    root = Tk()
+    app = Application(root)
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
 
