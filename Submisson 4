@@ -1,0 +1,212 @@
+from tkinter import *
+from tkinter import ttk, messagebox
+import random
+
+# Hire Details
+class HireRecord:
+    def __init__(self, first_name, last_name, item_hired, num_items):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.item_hired = item_hired
+        self.num_items = num_items
+        self.receipt_number = random.randint(100000, 999999)
+
+# Class to manage hire records
+class PartyHireStore:
+    def __init__(self):
+        self.hire_records = []
+
+    def add_record(self, record):
+        self.hire_records.append(record)
+
+    def remove_record(self, receipt_number):
+        self.hire_records = [record for record in self.hire_records if record.receipt_number != receipt_number]
+
+    def get_record(self, receipt_number):
+        for record in self.hire_records:
+            if record.receipt_number == receipt_number:
+                return record
+        return None
+
+    def get_records(self):
+        return self.hire_records
+
+# Application class for the Customer Record Details (Enter Hire Details)
+class CustomerRecordWindow:
+    def __init__(self, root, store, main_window):
+        self.store = store
+        self.root = root
+        self.main_window = main_window
+        self.root.title("Enter Hire Details")
+
+        # Create input fields and buttons
+        self.setup_widgets()
+
+    def setup_widgets(self):
+        Label(self.root, text="Customer First Name").grid(column=0, row=0, sticky=E)
+        Label(self.root, text="Customer Last Name").grid(column=0, row=1, sticky=E)
+        Label(self.root, text="Item Hired").grid(column=0, row=2, sticky=E)
+        Label(self.root, text="Number of Items").grid(column=0, row=3, sticky=E)
+
+        self.entry_first_name = Entry(self.root)
+        self.entry_first_name.grid(column=1, row=0)
+
+        self.entry_last_name = Entry(self.root)
+        self.entry_last_name.grid(column=1, row=1)
+
+        # ComboBox for "Item Hired" with specified options
+        self.combo_item_hired = ttk.Combobox(self.root, values=["Streamers", "Chair", "Candle", "Confetti", "Balloons", "Garlands", "Party Hats"])
+        self.combo_item_hired.grid(column=1, row=2)
+
+        # Spinner (Spinbox) for "Number of Items"
+        self.spinbox_num_items = Spinbox(self.root, from_=1, to=10, width=5)
+        self.spinbox_num_items.grid(column=1, row=3)
+
+        Button(self.root, text="Add Record", command=self.add_record).grid(column=2, row=0)
+        Button(self.root, text="Show Records", command=self.show_records).grid(column=2, row=1)
+        Button(self.root, text="Back to Main Menu", command=self.go_back).grid(column=2, row=2)
+        Button(self.root, text="Quit", command=self.quit_program).grid(column=2, row=3)
+
+        self.summary_label = Label(self.root, text="", anchor=W)
+        self.summary_label.grid(column=0, row=4, columnspan=3, sticky=W)
+
+    def add_record(self):
+        first_name = self.entry_first_name.get().strip()
+        last_name = self.entry_last_name.get().strip()
+        item_hired = self.combo_item_hired.get().strip()  # Retrieve the selected item from the ComboBox
+        num_items = int(self.spinbox_num_items.get())  # Get the quantity from the Spinbox
+
+        if not first_name or not last_name or not item_hired or num_items < 1:
+            messagebox.showerror("Error", "All fields must be filled and valid!")
+            return
+
+        record = HireRecord(first_name, last_name, item_hired, num_items)
+        self.store.add_record(record)
+        messagebox.showinfo("Success", f"Record added with receipt number: {record.receipt_number}")
+
+        self.entry_first_name.delete(0, END)
+        self.entry_last_name.delete(0, END)
+        self.combo_item_hired.set('')  # Clear the ComboBox selection
+        self.spinbox_num_items.delete(0, END)
+        self.spinbox_num_items.insert(0, '1')  # Reset Spinbox to default value
+
+        self.update_summary()
+
+    def show_records(self):
+        records = self.store.get_records()
+        if records:
+            record_text = "Current Records:\n"
+            for record in records:
+                record_text += (f"Receipt: {record.receipt_number}, "
+                                f"Customer: {record.first_name} {record.last_name}, "
+                                f"Item: {record.item_hired}, "
+                                f"Quantity: {record.num_items}\n")
+            messagebox.showinfo("Records", record_text)
+        else:
+            messagebox.showinfo("Records", "No records found.")
+
+    def update_summary(self):
+        last_record = self.store.get_records()[-1]
+        summary_text = (f"Customer: {last_record.first_name} {last_record.last_name}, "
+                        f"Item: {last_record.item_hired}, "
+                        f"Quantity: {last_record.num_items}")
+        self.summary_label.config(text=summary_text)
+
+    def go_back(self):
+        self.root.destroy()
+        self.main_window.root.deiconify()
+
+    def quit_program(self):
+        self.root.destroy()  # Properly close this window and end the application
+
+# Application class for the Receipt Details (Receipts)
+class ReceiptWindow:
+    def __init__(self, root, store, main_window):
+        self.store = store
+        self.root = root
+        self.main_window = main_window
+        self.root.title("Receipts")
+
+        # Create input fields and buttons
+        self.setup_widgets()
+
+    def setup_widgets(self):
+        Label(self.root, text="Receipt Number").grid(column=0, row=0, sticky=E)
+        self.entry_receipt = Entry(self.root)
+        self.entry_receipt.grid(column=1, row=0)
+
+        Button(self.root, text="Show Receipt", command=self.show_receipt).grid(column=2, row=0)
+        Button(self.root, text="Delete Receipt", command=self.delete_record).grid(column=2, row=1)
+        Button(self.root, text="Back to Main Menu", command=self.go_back).grid(column=2, row=2)
+        Button(self.root, text="Quit", command=self.quit_program).grid(column=2, row=3)
+
+    def show_receipt(self):
+        try:
+            receipt_number = int(self.entry_receipt.get())
+            record = self.store.get_record(receipt_number)
+            if record:
+                receipt_text = (f"Receipt Number: {record.receipt_number}\n"
+                                f"Customer Name: {record.first_name} {record.last_name}\n"
+                                f"Item Hired: {record.item_hired}\n"
+                                f"Number of Items: {record.num_items}")
+                messagebox.showinfo("Receipt", receipt_text)
+            else:
+                messagebox.showerror("Error", "Receipt not found!")
+        except ValueError:
+            messagebox.showerror("Error", "Invalid receipt number!")
+
+    def delete_record(self):
+        try:
+            receipt_number = int(self.entry_receipt.get())
+            if self.store.get_record(receipt_number):
+                self.store.remove_record(receipt_number)
+                messagebox.showinfo("Success", f"Record with receipt number {receipt_number} deleted.")
+                self.entry_receipt.delete(0, END)
+            else:
+                messagebox.showerror("Error", "Receipt not found!")
+        except ValueError:
+            messagebox.showerror("Error", "Invalid receipt number!")
+
+    def go_back(self):
+        self.root.destroy()
+        self.main_window.root.deiconify()
+
+    def quit_program(self):
+        self.root.destroy()  # Properly close this window and end the application
+
+# Main Window
+class MainWindow:
+    def __init__(self, root):
+        self.store = PartyHireStore()
+        self.root = root
+        self.root.title("Julie's Party Hire")
+
+        # Create main window buttons
+        self.setup_widgets()
+
+    def setup_widgets(self):
+        Button(self.root, text="Enter Hire Details", command=self.open_customer_records).pack(pady=10)
+        Button(self.root, text="Receipts", command=self.open_receipt_details).pack(pady=10)
+        Button(self.root, text="Quit", command=self.quit_program).pack(pady=10)
+
+    def open_customer_records(self):
+        self.root.withdraw()
+        new_window = Toplevel(self.root)
+        CustomerRecordWindow(new_window, self.store, self)
+
+    def open_receipt_details(self):
+        self.root.withdraw()
+        new_window = Toplevel(self.root)
+        ReceiptWindow(new_window, self.store, self)
+
+    def quit_program(self):
+        self.root.destroy()  # Properly close the main window and end the application
+
+# Main function to run the program
+def main():
+    root = Tk()
+    app = MainWindow(root)
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
